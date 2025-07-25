@@ -1,0 +1,29 @@
+# Create audio dataset
+train_ds, val_ds = tf.keras.utils.audio_dataset_from_directory(
+    directory=data_dir, batch_size=64, validation_split=0.2,
+    seed=0, output_sequence_length=16000, subset='both')
+
+label_names = np.array(train_ds.class_names)
+print("Label names:", label_names)
+
+# Remove last dimension
+def squeeze(audio, labels):
+    audio = tf.squeeze(audio, axis=-1)
+    return audio, labels
+
+train_ds = train_ds.map(squeeze)
+val_ds = val_ds.map(squeeze)
+
+# Split validation into val + test
+test_ds = val_ds.shard(num_shards=2, index=0)
+val_ds = val_ds.shard(num_shards=2, index=1)
+
+# Visualize waveforms
+for example_audio, example_labels in train_ds.take(1):
+    plt.figure(figsize=(10, 6))
+    for i in range(9):
+        plt.subplot(3, 3, i+1)
+        plt.plot(example_audio[i])
+        plt.title(label_names[example_labels[i]])
+    plt.tight_layout()
+    plt.show()
